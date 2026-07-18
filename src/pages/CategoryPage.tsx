@@ -34,6 +34,7 @@ export function CategoryPage() {
       try {
         const categoryName = categoryId ? decodeURIComponent(categoryId) : undefined;
         const data = await fetchProjects(categoryName);
+        setProjects(data);
       } catch (error) {
         console.error("GAGAL FETCH:", error);
       } finally {
