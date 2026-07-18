@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+
+@theme {
+  --color-accent-blood: #660000;
+  --color-accent-maroon: #5A0000;
+  --color-static-dark: #050202;
+  --color-static-light: #FFFAFA;
+  --color-bg-dark: var(--theme-bg);
+  --color-bg-light: var(--theme-text); 
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+}
+html, body {
+  overflow-x: clip;
+  max-width: 100vw;
+  width: 100%;
+}
+:root {
+  --theme-bg: #050202;
+  --theme-text: #FFFAFA;
+}
+:root.light {
+  --theme-bg: #FFFAFA;
+  --theme-text: #050202;
+}
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent-blood);
+}
+
+.light ::-webkit-scrollbar-track {
+  background: var(--color-bg-light);
+}
