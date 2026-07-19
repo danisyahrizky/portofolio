@@ -27,7 +27,7 @@ type Project = {
   description: string;
   link?: string; 
   behanceLink?: string;
-  visualAssets?: VisualAsset[]; // Menggantikan 'images'
+  visualAssets?: VisualAsset[]; 
 };
 
 export function CategoryPage() {
@@ -37,7 +37,6 @@ export function CategoryPage() {
 
   const [activeGallery, setActiveGallery] = useState<Project | null>(null);
   
-  // 2. State Layar Penuh Diubah Menjadi Objek
   const [fullscreenAsset, setFullscreenAsset] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
 
   useEffect(() => {
