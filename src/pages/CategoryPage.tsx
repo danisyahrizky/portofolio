@@ -4,6 +4,16 @@ import { fetchProjects, urlFor } from '../lib/sanity';
 import { ArrowLeft, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// 1. Injeksi Tipe Data Polimorfik
+type VisualAsset = {
+  _type: 'image' | 'file';
+  _key?: string;
+  asset: {
+    _ref: string;
+    url?: string; // URL ini didapat dari ekspansi GROQ (asset->url)
+  };
+};
+
 type Project = {
   _id: string;
   title: string;
@@ -17,7 +27,7 @@ type Project = {
   description: string;
   link?: string; 
   behanceLink?: string;
-  images?: any[]; 
+  visualAssets?: VisualAsset[]; // Menggantikan 'images'
 };
 
 export function CategoryPage() {
@@ -26,7 +36,9 @@ export function CategoryPage() {
   const [loading, setLoading] = useState(true);
 
   const [activeGallery, setActiveGallery] = useState<Project | null>(null);
-  const [fullscreenImg, setFullscreenImg] = useState<string | null>(null);
+  
+  // 2. State Layar Penuh Diubah Menjadi Objek
+  const [fullscreenAsset, setFullscreenAsset] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -45,13 +57,13 @@ export function CategoryPage() {
   }, [categoryId]);
 
   useEffect(() => {
-    if (activeGallery || fullscreenImg) {
+    if (activeGallery || fullscreenAsset) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
     }
     return () => { document.body.style.overflow = ''; };
-  }, [activeGallery, fullscreenImg]);
+  }, [activeGallery, fullscreenAsset]);
 
   if (loading) {
     return (
@@ -94,7 +106,7 @@ export function CategoryPage() {
                       <img 
                         src={urlFor(project.mainCover).url()} 
                         alt={project.title}
-                        onClick={() => setFullscreenImg(urlFor(project.mainCover).url())}
+                        onClick={() => setFullscreenAsset({ url: urlFor(project.mainCover).url(), type: 'image' })}
                         className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700 scale-100 group-hover:scale-105 cursor-zoom-in relative z-20"
                       />
                     ) : (
@@ -114,7 +126,6 @@ export function CategoryPage() {
 
                     {project.category === 'Frontend Development' ? (
                       <div className="flex flex-wrap items-center gap-6 mt-4 w-full">
-
                         {project.link && (
                           <a 
                             href={project.link}
@@ -136,7 +147,6 @@ export function CategoryPage() {
                             Case Study
                           </a>
                         )}
-
                       </div>
                     ) : (
                       <button 
@@ -154,6 +164,7 @@ export function CategoryPage() {
         </div>
       </div>
 
+      {/* GALERI MODAL */}
       <AnimatePresence>
         {activeGallery && (
           <motion.div
@@ -178,20 +189,42 @@ export function CategoryPage() {
               </div>
 
               <div className="w-full max-w-[90rem] pb-32 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 items-start">
-                {activeGallery.images && activeGallery.images.length > 0 ? (
-                  activeGallery.images.map((img, idx) => (
-                    <div key={idx} className="w-full flex flex-col gap-3 md:gap-4">
-                      <span className="font-sans font-bold text-[10px] md:text-xs uppercase opacity-50 tracking-widest border-b-2 border-current pb-2">
-                        Visual 0{idx + 1}
-                      </span>
-                      <img 
-                        src={urlFor(img).url()}
-                        alt={`Graphic ${idx + 1}`}
-                        onClick={() => setFullscreenImg(urlFor(img).url())}
-                        className="w-full h-auto border-4 border-current cursor-zoom-in transition-all duration-300 hover:border-accent-blood hover:shadow-[8px_8px_0px_0px_var(--color-accent-blood)] md:hover:-translate-y-1.5 md:hover:-translate-x-1.5 bg-bg-light/5"
-                      />
-                    </div>
-                  ))
+                
+                {/* 3. Logika Rendering Polimorfik (Gambar vs Video) */}
+                {activeGallery.visualAssets && activeGallery.visualAssets.length > 0 ? (
+                  activeGallery.visualAssets.map((asset, idx) => {
+                    const isVideo = asset._type === 'file';
+                    const assetUrl = isVideo ? asset.asset?.url : urlFor(asset).url();
+
+                    if (!assetUrl) return null; // Keamanan fail-safe jika URL kosong
+
+                    return (
+                      <div key={asset._key || idx} className="w-full flex flex-col gap-3 md:gap-4">
+                        <span className="font-sans font-bold text-[10px] md:text-xs uppercase opacity-50 tracking-widest border-b-2 border-current pb-2">
+                          Visual 0{idx + 1} {isVideo ? '[VIDEO]' : ''}
+                        </span>
+                        
+                        {isVideo ? (
+                          <video 
+                            src={assetUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            onClick={() => setFullscreenAsset({ url: assetUrl, type: 'video' })}
+                            className="w-full h-auto border-4 border-current cursor-zoom-in transition-all duration-300 hover:border-accent-blood hover:shadow-[8px_8px_0px_0px_var(--color-accent-blood)] md:hover:-translate-y-1.5 md:hover:-translate-x-1.5 bg-bg-light/5"
+                          />
+                        ) : (
+                          <img 
+                            src={assetUrl}
+                            alt={`Graphic ${idx + 1}`}
+                            onClick={() => setFullscreenAsset({ url: assetUrl, type: 'image' })}
+                            className="w-full h-auto border-4 border-current cursor-zoom-in transition-all duration-300 hover:border-accent-blood hover:shadow-[8px_8px_0px_0px_var(--color-accent-blood)] md:hover:-translate-y-1.5 md:hover:-translate-x-1.5 bg-bg-light/5"
+                          />
+                        )}
+                      </div>
+                    );
+                  })
                 ) : (
                   <div className="w-full py-24 text-center font-bold text-xl md:text-3xl uppercase opacity-50 tracking-widest col-span-full">
                     [ No Additional Graphics Uploaded ]
@@ -203,24 +236,37 @@ export function CategoryPage() {
         )}
       </AnimatePresence>
 
+      {/* 4. MODAL LAYAR PENUH (Gambar & Video) */}
       <AnimatePresence>
-        {fullscreenImg && (
+        {fullscreenAsset && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={() => setFullscreenImg(null)}
+            onClick={() => setFullscreenAsset(null)}
             className="fixed inset-0 z-[110] bg-[#050505]/95 backdrop-blur-lg flex justify-center items-center p-4 cursor-zoom-out"
           >
-            <button className="absolute top-6 right-6 md:top-10 md:right-10 text-white opacity-50 hover:opacity-100 transition-opacity">
+            <button className="absolute top-6 right-6 md:top-10 md:right-10 text-white opacity-50 hover:opacity-100 transition-opacity z-50">
               <X size={32} />
             </button>
-            <img 
-              src={fullscreenImg} 
-              alt="Fullscreen Zoom" 
-              className="max-w-full max-h-full object-contain shadow-2xl drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-            />
+            
+            {fullscreenAsset.type === 'video' ? (
+              <video 
+                src={fullscreenAsset.url} 
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="max-w-full max-h-full object-contain shadow-2xl drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+              />
+            ) : (
+              <img 
+                src={fullscreenAsset.url} 
+                alt="Fullscreen Zoom" 
+                className="max-w-full max-h-full object-contain shadow-2xl drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
